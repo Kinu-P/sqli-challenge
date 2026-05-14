@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQLi Challenge</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #fff;
+      color: #000;
+      text-align: center;
+      margin-top: 50px;
+    }
+
+    .box {
+      border: 2px solid #000;
+      padding: 20px;
+      width: 480px;
+      margin: 0 auto;
+      text-align: left;
+    }
+
+    .flag-box {
+      border: 1px dashed #000;
+      padding: 10px;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      border: 1px solid #000;
+      padding: 8px;
+      width: 90%;
+      margin-bottom: 10px;
+      font-family: monospace;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      border-width: 2px;
+      padding: 7px;
+    }
+
+    button,
+    .btn {
+      background: #fff;
+      border: 2px solid #000;
+      padding: 8px 15px;
+      cursor: pointer;
+      text-decoration: none;
+      color: #000;
+      display: inline-block;
+      font-family: monospace;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    button:hover,
+    .btn:hover {
+      background: #000;
+      color: #fff;
+    }
+
+    .error {
+      font-weight: bold;
+      border-left: 4px solid #000;
+      padding-left: 10px;
+      margin-bottom: 10px;
+    }
+
+    .query-box {
+      border: 1px dotted #000;
+      padding: 8px;
+      margin-bottom: 15px;
+      font-size: 0.85em;
+      word-break: break-all;
+    }
+
+    .hint {
+      font-style: italic;
+      margin-bottom: 15px;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px dashed #000;
+      margin: 25px 0;
+    }
+
+    .skip-text {
+      font-size: 0.9em;
+      margin-left: 10px;
+    }
+
+    .nav-btn {
+      background: #fff;
+      border: 1px dashed #000;
+      padding: 4px 8px;
+      font-size: 0.85em;
+      margin-bottom: 15px;
+      cursor: pointer;
+    }
+
+    .nav-btn:hover {
+      background: #000;
+      color: #fff;
+      border: 1px solid #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="box" id="app"></div>
+
+  <script>
+    let storedLevel = localStorage.getItem("sqli_level");
+    let currentLevel = storedLevel ? storedLevel : "1";
+
+    renderLevel(currentLevel);
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function renderLevel(level, errorMsg = "", queryStr = "", flag = "") {
+      localStorage.setItem("sqli_level", level);
+
+      const app = document.getElementById("app");
+      let html = "";
+
+      if (level === "2") {
+        html += `<button onclick="renderLevel('1')" class="nav-btn">&lt; Back to Level 1</button>`;
+      } else if (level === "3") {
+        html += `<button onclick="renderLevel('2')" class="nav-btn">&lt; Back to Level 2</button>`;
+      } else if (level === "success") {
+        html += `<button onclick="renderLevel('3')" class="nav-btn">&lt; Back to Level 3</button>`;
+      } else if (level === "4") {
+        html += `<button onclick="renderLevel('3')" class="nav-btn">&lt; Back to Level 3</button>`;
+      }
+
+      if (level === "1") {
+        html += `
+          <h2>Level 1</h2>
+          <p class="hint">Actually, you don't always need to know the username and password.</p>
+          <p class="hint">[Rumor has it that this webpage uses SQLite.]</p>
+        `;
+      } else if (level === "2") {
+        html += `
+          <div class="flag-box">Flag 1: ${escapeHtml(flag || "Solved. Flag was returned by server.")}</div>
+          <h2>Level 2</h2>
+          <p class="hint">Filter explanation: Spaces (' ') and equals signs ('=') are blocked.</p>
+        `;
+      } else if (level === "3") {
+        html += `
+          <div class="flag-box">Flag 2: ${escapeHtml(flag || "Solved. Flag was returned by server.")}</div>
+          <h2>Level 3</h2>
+          <p class="hint">Filter explanation: The keywords "admin" and "or", and all "-" and "=" characters are completely blocked.</p>
+        `;
+      } else if (level === "success") {
+        html += `
+          <h2>Congratulations!</h2>
+          <div class="flag-box">Flag 3: ${escapeHtml(flag || "Solved. Flag was returned by server.")}</div>
+          <p>You have successfully bypassed the Level 3 filter.</p>
+          <br>
+          <button onclick="renderLevel('4')" class="btn">Proceed to Level 4</button>
+        `;
+        app.innerHTML = html;
+        return;
+      } else if (level === "4") {
+        html += `
+          <h2>Level 4</h2>
+          <p>Welcome to Level 4. The challenge continues...</p>
+          <p class="hint">[Under Construction]</p>
+        `;
+        app.innerHTML = html;
+        return;
+      }
+
+      if (errorMsg) {
+        html += `<p class="error">${escapeHtml(errorMsg)}</p>`;
+
+        if (queryStr) {
+          html += `
+            <div class="query-box">
+              Executed Query:<br><br>
+              <code>${escapeHtml(queryStr)}</code>
+            </div>
+          `;
+        }
+      }
+
+      html += `
+        <form onsubmit="handleLogin(event, '${level}')">
+          <label>Username:</label><br>
+          <input type="text" id="user" autocomplete="off"><br>
+
+          <label>Password:</label><br>
+          <input type="password" id="pass" autocomplete="off"><br>
+
+          <button type="submit">Login</button>
+        </form>
+      `;
+
+      if (level === "3") {
+        html += `
+          <hr>
+          <button onclick="renderLevel('4')" class="btn">Skip</button>
+          <span class="skip-text">You can skip this level, but you'll miss a flag.</span>
+        `;
+      }
+
+      app.innerHTML = html;
+    }
+
+    async function handleLogin(e, level) {
+      e.preventDefault();
+
+      const user = document.getElementById("user").value;
+      const pass = document.getElementById("pass").value;
+
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username: user,
+          password: pass,
+          level: Number(level)
+        })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        renderLevel(level, data.message, data.query || "");
+        return;
+      }
+
+      if (level === "1") {
+        renderLevel("2", "", data.query || "", data.flag);
+      } else if (level === "2") {
+        renderLevel("3", "", data.query || "", data.flag);
+      } else if (level === "3") {
+        renderLevel("success", "", data.query || "", data.flag);
+      }
+    }
+  </script>
+</body>
+</html>
