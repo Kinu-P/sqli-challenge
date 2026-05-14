@@ -1,8 +1,25 @@
 require("dotenv").config({ path: ".env.local" });
-const initSqlJs = require("sql.js");
+
+const fs = require("fs");
+const initSqlJs = require("sql.js/dist/sql-wasm.js");
+
+let SQLPromise = null;
+
+async function getSQL() {
+  if (!SQLPromise) {
+    const wasmPath = require.resolve("sql.js/dist/sql-wasm.wasm");
+    const wasmBinary = fs.readFileSync(wasmPath);
+
+    SQLPromise = initSqlJs({
+      wasmBinary
+    });
+  }
+
+  return SQLPromise;
+}
 
 async function createDb() {
-  const SQL = await initSqlJs();
+  const SQL = await getSQL();
   const db = new SQL.Database();
 
   db.run("CREATE TABLE users (username TEXT, password TEXT);");
